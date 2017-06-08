@@ -1,3 +1,149 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <time.h>
+#include "getch.h"
+
+static char map_array[5][31][31]; //입력받은 전체 맵 저장(new나 replay를 위해서 그냥 저장만 해둡니다.)
+static char save_array[5][31][31]; //실제로 이동하는 맵 
+static char for_undo_map[31][31]; //undo를 위해서 직전 상황 저장 하는 맵
+static int map_array_pnt[6]; // 각 맵별로 맵이 몇줄인지 저장. load나 save 등을 편리하게 하기 위함.
+static int map_cnt;
+static int now_map;	// 현재 진행중인 맵
+static int undo_cnt;  
+static int now_player[2]; // 현재 위치
+static time_t start, end;  
+static int play_time = 0;	
+static char user_name[10];
+static int load_time[5][5];  // 랭킹 저장용
+static char load_name[5][5][10]; //랭킹 저장용
+static int ranking_idx[5]; // 랭킹저장용 
+
+int check_map(){     // 해당 맵이 끝났는지 확인하기 위한 함수
+	for(int i=0; i<=map_array_pnt[now_map]; i++){
+		for(int j=0; j<=strlen(map_array[now_map][i]); j++){
+			if (save_array[now_map][i][j]=='O')
+				return 0;
+			else if ((save_array[now_map][i][j]=='@') && (map_array[now_map][i][j]=='O'))
+				return 0;	
+		}
+	}
+	return 1;
+}
+void find_player(int map_num){  // 현재 진행중인 위치 찾기 위한 함수
+	for(int i=1; i<map_array_pnt[map_num]; i++){
+		for(int j=0; j<sizeof(save_array[map_num][i]); j++){
+			if(save_array[map_num][i][j] == '@'){
+				now_player[0] = i;
+				now_player[1] = j;
+				break;
+			}
+		}
+	}
+}
+int map_test(int map_c){ // O의 개수와 $의 개수로 올바른 맵인지 테스트
+	int box = 0, place = 0;
+	for(int i=0; i<=map_array_pnt[map_c]; i++){
+		for(int j=0; j<=strlen(map_array[map_c][i]); j++){
+			if (map_array[map_c][i][j]=='$') box ++;
+			else if (map_array[map_c][i][j]=='O') place ++;
+		}
+	}
+	if (box != place) return 0;
+	else return 1;		
+}
+void print_map(int map_num){ // 맵 출력
+	for(int i=1; i<map_array_pnt[map_num]; i++)
+		printf("%s", save_array[map_num][i]);
+}
+void load_map(){  // 처음 시작 할때 맵 로드
+	FILE *fp;
+	fp = fopen("map.txt", "rt");
+	map_cnt = 0; 
+	int map_pnt = 0;
+	char test_empty[3];	
+	while(1){
+		fgets(map_array[map_cnt][map_pnt], sizeof(char)*30, fp);
+		if(map_array[map_cnt][map_pnt][0] == 'e') {
+			map_array_pnt[map_cnt] = map_pnt;	
+			break;
+		}
+		else if((map_pnt != 0) && (map_array[map_cnt][map_pnt][0] == 'm')){
+			strcpy(map_array[map_cnt+1][0], map_array[map_cnt][map_pnt]);
+			map_array[map_cnt][map_pnt][0]='\0';
+			map_array_pnt[map_cnt] = map_pnt;
+			map_cnt++;
+			map_pnt = 1;
+			continue;
+		}
+		map_pnt++;
+	}
+	fclose(fp);
+	memcpy(save_array, map_array, sizeof(map_array));
+	memcpy(for_undo_map, save_array[now_map], sizeof(save_array[now_map]));
+	fp = fopen("ranking.txt", "r");
+	fgets(test_empty, sizeof(char)*3, fp);
+	fclose(fp);
+	if(test_empty[0] == '@'){
+		fopen("ranking.txt", "w");
+		for(int i = 0; i <= map_cnt; i++)
+			fprintf(fp, "#%d\n", i);
+		fputs("@", fp);
+		fclose(fp);
+	}
+	return;
+}
+
+void load_save(){  // 세이브된 맵 불러오기 
+	printf("세이브 된 맵을 불러왔습니다.\n");
+	FILE *fp;
+	fp = fopen("sokoban.txt", "r");
+	map_cnt = 0; 
+	int map_pnt = 0; 
+	char nm[3];
+	char uc[3];
+	char pt[30];
+    //char un[10];
+	while(1){
+		fgets(save_array[map_cnt][map_pnt], sizeof(char)*30, fp);
+		if(save_array[map_cnt][map_pnt][0] == 'e') {
+			map_array_pnt[map_cnt] = map_pnt;
+			fgets(nm, sizeof(char)*3, fp);	
+			fgets(pt, sizeof(char)*30, fp);		
+			fgets(uc, sizeof(char)*3, fp);  
+			//fgets(un, sizeof(char)*10, fp);
+			break;
+		}
+		else if((map_pnt != 0) && (save_array[map_cnt][map_pnt][0] == 'm')){
+			strcpy(save_array[map_cnt+1][0], save_array[map_cnt][map_pnt]);
+			save_array[map_cnt][map_pnt][0]='\0';
+			map_array_pnt[map_cnt] = map_pnt;
+			map_cnt++;
+			map_pnt = 1;
+			continue;
+		}
+		map_pnt++;
+	}
+	now_map = atoi(nm);
+	play_time = atoi(pt);
+	undo_cnt = atoi(uc);
+	//user_name=atoi(un);
+	fclose(fp);
+	find_player(now_map);
+	print_map(now_map);
+	return;
+}
+
+void compare_map(){   //  원래 O였던 위치에 @가 가면 다음 이동시 다시 빈칸이 아니라 O로 채우기 위해서 만든 함수.
+	for(int i=0; i<=map_array_pnt[now_map]; i++){
+		for(int j=0; j<=strlen(map_array[now_map][i]); j++){
+			if ((map_array[now_map][i][j]=='O') && (save_array[now_map][i][j]==' '))
+				save_array[now_map][i][j] = 'O';
+		}
+	}
+}
+
+
 void left(){//왼쪽으로 이동
 	memcpy(for_undo_map, save_array[now_map], sizeof(save_array[now_map]));
 	if(save_array[now_map][now_player[0]][now_player[1]-1] == 'O'){//이동방향이 골인지점인 경우
