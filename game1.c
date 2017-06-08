@@ -251,3 +251,165 @@ void rank(){   // 스테이지가 끝나면 랭킹을 저장하는 함수.
 	fputs("@", fp);	
 	fclose(fp);
 }
+
+void load_rank(){   // 랭킹을 저장하기 전에 미리 저장 돼 있던 랭킹 불러오기.
+	FILE *fp;
+	char lr[10];
+	int ti=0, ni=0, mc=0, load_idx = 0;
+	fp = fopen("ranking.txt", "r+");
+	
+	while(1){
+		ranking_idx[mc] = 0;
+		if(map_array_pnt[mc] == 0) 
+			break;
+		while(1){
+			fgets(lr, sizeof(char)*10, fp);
+			if(lr[0] == '@') break;
+			if((load_idx>0) && (lr[0]=='#')){
+				load_idx = 1;
+				break;
+			}
+			if((load_idx%2 ==1)){
+				load_time[mc][ti++] = atoi(lr);
+			}
+			else if((load_idx!=0)&&(load_idx%2==0)){
+				memcpy(load_name[mc][ni++], lr, sizeof(lr));
+				ranking_idx[mc]++;
+			}
+			load_idx++;
+		}
+		ti=0;ni=0;
+		mc++;
+	}
+	fclose(fp);
+}
+void top(int sgn){  //상위 5명의 랭킹을 보여주는 함수  
+	load_rank();
+	int j = 0;
+	if(sgn == 0){
+		while(1){
+			if(map_array_pnt[j] == 0)
+			   	break;
+			for(int i=0; i<ranking_idx[j]; i++)
+				printf("%d번맵 %d등 %d초 %s", j+1, i+1, load_time[now_map][i], load_name[now_map][i]);
+			j++;
+		}
+	}
+	else
+		for(int i=0; i<ranking_idx[sgn-1]; i++)
+			printf("현재 맵 %d등 %d초 %s", i+1, load_time[sgn-1][i], load_name[sgn-1][i]);
+	print_map(now_map);  
+}
+void the_end(){//스테이지가 끝나면 축하메세지를 출력하고, 시간을 측정하는 함수
+	end = time(NULL);
+	play_time = play_time + (end - start);
+	rank();
+	printf("당신의 기록은 %d초 입니다. 축하합니다!\n", play_time);
+	printf("다음 스테이지로 넘어갑니다\n");
+	start = time(NULL);
+	play_time = 0;
+}
+void display(){//기능을 보여주는 함수
+	printf("h(왼쪽), j(아래), k(위), l(오른쪽)\n");
+	printf("u(undo)\n");
+	printf("r(replay)\n");
+	printf("n(new)\n");
+	printf("s(save)\n");
+	printf("f(file load)\n");
+	printf("d(display help\n");
+	printf("t(top)\n");
+}
+int main() {
+	char cmd;
+	char c[2];
+	int test_idx=0;
+	printf("Start....\n");
+	printf("input name : ");
+	scanf("%s", user_name);	
+	printf("Hello, %s\n", user_name);
+	load_map();		
+	while(map_array_pnt[test_idx]){
+		if(map_test(test_idx) == 0){ 
+			printf("%d 번째 맵이 잘못된 map입니다.\n", test_idx+1);
+		   	return 0;
+	   	}
+		test_idx++;
+	}	
+	now_map = 0;
+	find_player(now_map);
+	print_map(now_map);
+	start = time(NULL);  
+	while(1){
+		
+		cmd = getch();
+		if(cmd == 't'){
+			printf("0을 입력하시면 전체순위, 1~5를 입력하시면 해당 맵의 순위가 나옵니다.\n");
+			cmd = getch();
+			if(cmd == '0') top(0);
+			else top(cmd-'0');
+			continue;
+		}	
+		switch(cmd) {
+			case 'h' :
+			   system("clear");
+			   printf("사용자 이름:%s\n",user_name);
+		   	   left(); 
+			   break; 
+			case 'j' :
+			  system("clear");
+			  printf("사용자 이름:%s\n",user_name);
+			  up();
+			  break;
+			case 'k' :
+			  system("clear");
+			  printf("사용자 이름:%s\n",user_name);
+			  down();
+			  break; 
+			case 'l' : 
+			  system("clear");
+			  printf("사용자 이름:%s\n",user_name);
+			  right();
+			  break;
+			case 's' :
+			  save();
+		      printf("저장되었음\n");
+			  break;  
+			case 'u' :
+			 system("clear");
+		     printf("사용자 이름:%s\n",user_name);
+			 undo();
+			 break; 
+			case 'f' : 
+			 system("clear");
+			 printf("사용자 이름:%s\n",user_name);
+			 load_save();
+			 break;
+			case 'd' : 
+			 display();
+			 break;
+			case 'r' : 
+			 system("clear");
+			 printf("사용자 이름:%s\n",user_name);
+			 replay();
+			 break;
+			case 'n' :
+			 system("clear");
+		   	 printf("새로운 게임\n");
+			 printf("사용자 이름:%s\n",user_name);
+			 new();
+		   	 break;
+			case 'e' : 
+			exit_game();
+		   	return 0;
+		}
+		if (check_map()) {
+			the_end();
+			now_map++;
+			if(map_array_pnt[now_map] == 0){
+				 return 0; }
+			print_map(now_map);
+			find_player(now_map);
+		}
+	}
+	return 0;
+}
