@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
-#include "getch.h"
+#include <termio.h>
 
 static char map_array[5][31][31]; //입력받은 전체 맵 저장(new나 replay를 위해서 그냥 저장만 해둡니다.)
 static char save_array[5][31][31]; //실제로 이동하는 맵 
@@ -17,7 +17,22 @@ static int play_time = 0;
 static char user_name[10];
 static int load_time[5][5];  // 랭킹 저장용
 static char load_name[5][5][10]; //랭킹 저장용
-static int ranking_idx[5]; // 랭킹저장용 
+static int ranking_idx[5]; // 랭킹저장용  23   int getch(void){
+        int ch;
+        struct termios buf;
+        struct termios save;
+       tcgetattr(0, &save);
+        buf = save;
+        buf.c_lflag&=~(ICANON|ECHO);
+        buf.c_cc[VMIN] = 1;
+        buf.c_cc[VTIME] = 0;
+        tcsetattr(0, TCSAFLUSH, &buf);
+        ch = getchar();
+        tcsetattr(0, TCSAFLUSH, &save);
+        return ch;
+    }
+
+
 
 int check_map(){     // 해당 맵이 끝났는지 확인하기 위한 함수
 	for(int i=0; i<=map_array_pnt[now_map]; i++){
@@ -94,7 +109,12 @@ void load_map(){  // 처음 시작 할때 맵 로드
 	return;
 }
 
-void load_save(){  // 세이브된 맵 불러오기 
+void load_save(){  // 세이브된 맵 불러오기 114   
+	for(int i; i<10; i++)
+	    user_name[i] = '\0';
+       printf("f\n");
+
+	
 	printf("세이브 된 맵을 불러왔습니다.\n");
 	FILE *fp;
 	fp = fopen("sokoban.txt", "r");
@@ -103,7 +123,6 @@ void load_save(){  // 세이브된 맵 불러오기
 	char nm[3];
 	char uc[3];
 	char pt[30];
-    //char un[10];
 	while(1){
 		fgets(save_array[map_cnt][map_pnt], sizeof(char)*30, fp);
 		if(save_array[map_cnt][map_pnt][0] == 'e') {
@@ -111,7 +130,7 @@ void load_save(){  // 세이브된 맵 불러오기
 			fgets(nm, sizeof(char)*3, fp);	
 			fgets(pt, sizeof(char)*30, fp);		
 			fgets(uc, sizeof(char)*3, fp);  
-			//fgets(un, sizeof(char)*10, fp);
+			fgets(user_name, sizeof(char)*10, fp);
 			break;
 		}
 		else if((map_pnt != 0) && (save_array[map_cnt][map_pnt][0] == 'm')){
@@ -316,13 +335,21 @@ void save(){//저장함수
 		if(map_array_pnt[i] == 0) {
 			fputs("end\n", fp);
 			sprintf(temp, "%d", now_map);
-			fputs(temp, fp); fputs("\n", fp);
+			fputs(temp, fp);
+			fputs("\n", fp);
 			sprintf(temp, "%d", play_time); 
-			fputs(temp, fp); fputs("\n", fp);
+			fputs(temp, fp);
+			fputs("\n", fp);
 			sprintf(temp, "%d", undo_cnt);	
-			fputs(temp, fp); fputs("\n", fp);
+			fputs(temp, fp); 
+			fputs("\n", fp);
 			sprintf(temp,"%s", user_name);
-			fputs(temp, fp); fputs("\n", fp);
+			fputs(temp, fp);
+			fputs("\n", fp);
+                        sprintf(temp,"%s", user_name);
+                        fputs(temp, fp);
+                        fputs("\n", fp);
+
 			break;		
 	        }
 
@@ -469,6 +496,7 @@ int main() {
 	char cmd;
 	char c[2];
 	int test_idx=0;
+	system("clear");
 	printf("Start....\n");
 	printf("input name : ");
 	scanf("%s", user_name);	
@@ -496,58 +524,59 @@ int main() {
 			continue;
 		}	
 		switch(cmd) {
-			case 'h' :
-			   system("clear");
-			   printf("사용자 이름:%s\n",user_name);
-		   	   left(); 
-			   break; 
-			case 'j' :
-			  system("clear");
-			  printf("사용자 이름:%s\n",user_name);
-			  up();
-			  break;
-			case 'k' :
-			  system("clear");
-			  printf("사용자 이름:%s\n",user_name);
-			  down();
-			  break; 
-			case 'l' : 
-			  system("clear");
-			  printf("사용자 이름:%s\n",user_name);
-			  right();
-			  break;
-			case 's' :
-			  save();
-		      printf("저장되었음\n");
-			  break;  
-			case 'u' :
-			 system("clear");
-		     printf("사용자 이름:%s\n",user_name);
-			 undo();
-			 break; 
-			case 'f' : 
-			 system("clear");
-			 printf("사용자 이름:%s\n",user_name);
-			 load_save();
-			 break;
-			case 'd' : 
-			 display();
-			 break;
-			case 'r' : 
-			 system("clear");
-			 printf("사용자 이름:%s\n",user_name);
-			 replay();
-			 break;
-			case 'n' :
-			 system("clear");
-		   	 printf("새로운 게임\n");
-			 printf("사용자 이름:%s\n",user_name);
-			 new();
-		   	 break;
-			case 'e' : 
-			exit_game();
-		   	return 0;
-		}
+             case 'h' :
+                system("clear");
+                left();
+                printf("사용자 이름:%s\n",user_name);
+                break;
+             case 'j' :
+               system("clear");
+               up();
+               printf("사용자 이름:%s\n",user_name);
+               break;
+             case 'k' :
+               system("clear");
+               down();
+               printf("사용자 이름:%s\n",user_name);
+               break;
+             case 'l' :
+               system("clear");
+               right();
+               printf("사용자 이름:%s\n",user_name);
+               break;
+             case 's' :
+               save();
+               printf("저장되었음\n");
+               break;
+             case 'u' :
+              system("clear");
+              undo();
+              printf("사용자 이름:%s\n",user_name);
+              break;
+             case 'f' :
+              system("clear");
+              load_save();
+              printf("사용자 이름:%s\n",user_name);
+              break;
+             case 'd' :
+              display();
+              break;
+             case 'r' :
+              system("clear");
+              replay();
+              printf("사용자 이름:%s\n",user_name);
+              break;
+	     case 'n' :
+              system("clear");
+              printf("새로운 게임\n");
+              new();
+              printf("사용자 이름:%s\n",user_name);
+              break;
+             case 'e' :
+             exit_game();
+            return 0;
+         }
+
 		if (check_map()) {
 			the_end();
 			now_map++;
