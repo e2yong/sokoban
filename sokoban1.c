@@ -458,23 +458,22 @@ void rank(){   // 스테이지가 끝나면 랭킹을 저장하는 함수.
 	fclose(fp);
 }
 
-void top(int sgn){  //상위 5명의 랭킹을 보여주는 함수  
-	load_rank();
-	int j = 0;
-	if(sgn == 0){
-		while(1){
-			if(map_array_pnt[j] == 0)
-			   	break;
-			for(int i=0; i<ranking_idx[j]; i++)
-				printf("%d번맵 %d등 %d초 %s", j+1, i+1, load_time[now_map][i], load_name[now_map][i]);
-			j++;
-		}
-	}
-	else
-		for(int i=0; i<ranking_idx[sgn-1]; i++)
-			printf("현재 맵 %d등 %d초 %s", i+1, load_time[sgn-1][i], load_name[sgn-1][i]);
-	print_map(now_map);  
-}
+ void top(int sgn){  //상위 5명의 랭킹을 보여주는 함수
+     load_rank();
+     int j = 0;
+     int k=0;
+     if(sgn == 0){
+             for(int k=0; k<5;k++)
+             for(int i=0; i<5; i++)
+                 printf("%d번맵 %d등 %d초 %s", k+1, i+1, load_time[k][i], load_name[k][i]);
+
+     }
+     else
+         for(int i=0; i<ranking_idx[sgn-1]; i++)
+             printf("%d번째 맵  %d등 %d초 %s",sgn, i+1, load_time[sgn-1][i], load_name[sgn-1][i]);
+     print_map(now_map);
+ }
+
 void the_end(){//스테이지가 끝나면 축하메세지를 출력하고, 시간을 측정하는 함수
 	end = time(NULL);
 	play_time = play_time + (end - start);
