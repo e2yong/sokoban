@@ -17,8 +17,9 @@ static int play_time = 0;
 static char user_name[10];
 static int load_time[5][5];  // 랭킹 저장용
 static char load_name[5][5][10]; //랭킹 저장용
-static int ranking_idx[5]; // 랭킹저장용  23   int getch(void){
-        int ch;
+static int ranking_idx[5]; // 랭킹저장용 
+int getch(void){
+int ch;
         struct termios buf;
         struct termios save;
        tcgetattr(0, &save);
