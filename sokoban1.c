@@ -360,6 +360,38 @@ void exit_game(){ //게임종료
 	printf("good bye %s", user_name );
 	save();    
                 }
+
+void load_rank(){   // 랭킹을 저장하기 전에 미리 저장 돼 있던 랭킹 불러오기.
+	FILE *fp;
+	char lr[10];
+	int ti=0, ni=0, mc=0, load_idx = 0;
+	fp = fopen("ranking.txt", "r+");
+	
+	while(1){
+		ranking_idx[mc] = 0;
+		if(map_array_pnt[mc] == 0) 
+			break;
+		while(1){
+			fgets(lr, sizeof(char)*10, fp);
+			if(lr[0] == '@') break;
+			if((load_idx>0) && (lr[0]=='#')){
+				load_idx = 1;
+				break;
+			}
+			if((load_idx%2 ==1)){
+				load_time[mc][ti++] = atoi(lr);
+			}
+			else if((load_idx!=0)&&(load_idx%2==0)){
+				memcpy(load_name[mc][ni++], lr, sizeof(lr));
+				ranking_idx[mc]++;
+			}
+			load_idx++;
+		}
+		ti=0;ni=0;
+		mc++;
+	}
+	fclose(fp);
+}
 void rank(){   // 스테이지가 끝나면 랭킹을 저장하는 함수.
 	load_rank();
 	FILE *fp;
@@ -426,37 +458,6 @@ void rank(){   // 스테이지가 끝나면 랭킹을 저장하는 함수.
 	fclose(fp);
 }
 
-void load_rank(){   // 랭킹을 저장하기 전에 미리 저장 돼 있던 랭킹 불러오기.
-	FILE *fp;
-	char lr[10];
-	int ti=0, ni=0, mc=0, load_idx = 0;
-	fp = fopen("ranking.txt", "r+");
-	
-	while(1){
-		ranking_idx[mc] = 0;
-		if(map_array_pnt[mc] == 0) 
-			break;
-		while(1){
-			fgets(lr, sizeof(char)*10, fp);
-			if(lr[0] == '@') break;
-			if((load_idx>0) && (lr[0]=='#')){
-				load_idx = 1;
-				break;
-			}
-			if((load_idx%2 ==1)){
-				load_time[mc][ti++] = atoi(lr);
-			}
-			else if((load_idx!=0)&&(load_idx%2==0)){
-				memcpy(load_name[mc][ni++], lr, sizeof(lr));
-				ranking_idx[mc]++;
-			}
-			load_idx++;
-		}
-		ti=0;ni=0;
-		mc++;
-	}
-	fclose(fp);
-}
 void top(int sgn){  //상위 5명의 랭킹을 보여주는 함수  
 	load_rank();
 	int j = 0;
